@@ -1,58 +1,62 @@
-# build stage for building .ts files
+# Build stage for building .ts files
 FROM node:20-alpine as build
 
+# Create the app directory
 RUN mkdir /home/app
 
 WORKDIR /home/app
 
-COPY package.json .
+# Copy package.json and package-lock.json (if present) to install dependencies
+COPY package.json . 
+COPY package-lock.json .  # Optional, if you have package-lock.json
 
+# Install dependencies, including TypeScript
 RUN npm install --ignore-scripts
 
+# Copy the rest of the application code
 COPY . .
 
+# Run the build command to compile TypeScript files
 RUN npm run build
 
-# prod stage for including only necessary files
+# Production stage for including only necessary files
 FROM node:20-alpine as prod
 
 LABEL org.opencontainers.image.source=https://github.com/ghoshRitesh12/aniwatch-api
 LABEL org.opencontainers.image.description="Node.js API for obtaining anime information from aniwatch.to (formerly zoro.to) written in TypeScript, made with Cheerio & Axios"
-LABEL org.opencontainers.image.description "Node.js API for obtaining anime information from aniwatch.to (formerly zoro.to) written in TypeScript, made with Cheerio & Axios"
 LABEL org.opencontainers.image.licenses=MIT
 
-# create a non-privileged user
+# Create a non-privileged user
 RUN addgroup -S aniwatch && adduser -S zoro -G aniwatch
 
-# set secure folder permissions
+# Set secure folder permissions
 RUN mkdir -p /app/public /app/dist && chown -R zoro:aniwatch /app
 
-# set non-privileged user
+# Switch to non-privileged user
 USER zoro
 
-# set working directory
+# Set working directory
 WORKDIR /app
 
-# copy config file for better use of layers
-COPY --chown=zoro:aniwatch package.json .
+# Copy package.json for dependency installation in production
+COPY --chown=zoro:aniwatch package.json . 
 
-# install dependencies
+# Install only production dependencies (excluding dev dependencies like TypeScript)
 RUN npm install --omit=dev --ignore-scripts
 
-# copy public folder from build stage to prod
+# Copy the build artifacts from the build stage
 COPY --from=build --chown=zoro:aniwatch /home/app/public /app/public
-
-# copy dist folder from build stage to prod
 COPY --from=build --chown=zoro:aniwatch /home/app/dist /app/dist
 
+# Health check command
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s CMD [ "npm", "run", "healthcheck" ]
 
+# Set environment variables
 ENV NODE_ENV=production
 ENV PORT=4000
 
-# exposed port
+# Expose the application port
 EXPOSE 4000
 
+# Command to start the app
 CMD [ "node", "dist/src/server.js" ]
-
-# exit
