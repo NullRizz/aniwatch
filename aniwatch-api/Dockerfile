@@ -6,9 +6,8 @@ RUN mkdir /home/app
 
 WORKDIR /home/app
 
-# Copy package.json and package-lock.json (if present) to install dependencies
-COPY package.json . 
-COPY package-lock.json .  # Optional, if you have package-lock.json
+# Copy package.json to install dependencies
+COPY package.json .
 
 # Install dependencies, including TypeScript
 RUN npm install --ignore-scripts
@@ -39,7 +38,7 @@ USER zoro
 WORKDIR /app
 
 # Copy package.json for dependency installation in production
-COPY --chown=zoro:aniwatch package.json . 
+COPY --chown=zoro:aniwatch package.json .
 
 # Install only production dependencies (excluding dev dependencies like TypeScript)
 RUN npm install --omit=dev --ignore-scripts
