@@ -1,6 +1,9 @@
 # Build stage for building .ts files
 FROM node:20-alpine as build
 
+# Install git and bash (needed for husky)
+RUN apk add --no-cache git bash
+
 # Create the app directory
 RUN mkdir /home/app
 
@@ -9,7 +12,7 @@ WORKDIR /home/app
 # Copy package.json to install dependencies
 COPY package.json .
 
-# Install dependencies, including TypeScript
+# Install dependencies, including TypeScript and husky
 RUN npm install --ignore-scripts
 
 # Copy the rest of the application code
@@ -20,6 +23,9 @@ RUN npm run build
 
 # Production stage for including only necessary files
 FROM node:20-alpine as prod
+
+# Install git and bash (needed for husky)
+RUN apk add --no-cache git bash
 
 LABEL org.opencontainers.image.source=https://github.com/ghoshRitesh12/aniwatch-api
 LABEL org.opencontainers.image.description="Node.js API for obtaining anime information from aniwatch.to (formerly zoro.to) written in TypeScript, made with Cheerio & Axios"
